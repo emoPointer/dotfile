@@ -1,0 +1,10 @@
+# Only the stable, intentionally tracked Codex files belong in this repository.
+.codex/*
+!.codex/AGENTS.md
+!.codex/config.toml
+
+# Local backups and editor or operating-system artifacts.
+*.backup.*
+*.uninstall-backup.*
+*.swp
+.DS_Store
