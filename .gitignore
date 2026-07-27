@@ -1,10 +1,18 @@
-# Only the stable, intentionally tracked Codex files belong in this repository.
-.codex/*
-!.codex/AGENTS.md
-!.codex/config.toml
-
-# Local backups and editor or operating-system artifacts.
+# Local backups created by the installers.
 *.backup.*
 *.uninstall-backup.*
+
+# Editor and operating-system artifacts.
 *.swp
+*~
 .DS_Store
+
+# Codex credentials and runtime data must never be tracked.
+codex/auth.json
+codex/history.jsonl
+codex/*.sqlite*
+codex/cache/
+codex/log/
+codex/logs/
+codex/sessions/
+codex/tmp/

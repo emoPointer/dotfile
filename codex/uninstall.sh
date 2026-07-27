@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Purpose: safely undo changes previously made by dotcodex install.sh.
-# Inputs: rollback state stored in CODEX_HOME/.dotcodex-state.
+# Purpose: safely undo changes previously made by codex/install.sh.
+# Inputs: rollback state stored in CODEX_HOME/.dotfiles-codex-state.
 # Outputs: restored AGENTS.md and restored managed keys in config.toml.
 # Prerequisites: Bash, awk, grep, cmp, cp, mktemp, and a writable CODEX_HOME.
 # Usage: ./uninstall.sh [--dry-run]
@@ -10,7 +10,7 @@
 set -euo pipefail
 
 readonly TARGET_DIR="${CODEX_HOME:-${HOME}/.codex}"
-readonly STATE_DIR="${TARGET_DIR}/.dotcodex-state"
+readonly STATE_DIR="${TARGET_DIR}/.dotfiles-codex-state"
 readonly TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 
 dry_run=false
@@ -20,7 +20,7 @@ usage() {
   cat <<'EOF'
 Usage: ./uninstall.sh [--dry-run]
 
-Undo changes recorded by dotcodex install.sh. Only the four managed config keys
+Undo changes recorded by codex/install.sh. Only the four managed config keys
 are reverted, so later machine-specific sections remain in place.
 
 Options:
@@ -60,7 +60,7 @@ if (( $# > 1 )); then
   fail "expected at most one argument"
 fi
 
-[[ -d "${STATE_DIR}" ]] || fail "no dotcodex install state found in ${STATE_DIR}"
+[[ -d "${STATE_DIR}" ]] || fail "no Codex install state found in ${STATE_DIR}"
 
 backup_current_file() {
   local target="$1"
@@ -250,4 +250,4 @@ if [[ "${dry_run}" != true ]]; then
   fi
 fi
 
-printf 'dotcodex uninstall complete. Start a new Codex session to use the restored settings.\n'
+printf 'Codex configuration uninstall complete. Start a new Codex session to use the restored settings.\n'
