@@ -3,15 +3,24 @@
 本目录中的 `config` 是从本机 `~/.config/terminator/config` 提取的个人
 Terminator 配置。
 
-## 导入配置
+## 一条指令导入
 
-克隆私有仓库后执行：
+使用 `curl`：
 
 ```bash
-gh repo clone emoPointer/dotfile
-cd dotfile/terminator
-./install.sh --dry-run
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/emoPointer/dotfile/main/terminator/install.sh | bash
+```
+
+或者使用 `wget`：
+
+```bash
+wget -qO- https://raw.githubusercontent.com/emoPointer/dotfile/main/terminator/install.sh | bash
+```
+
+正式导入前可以先预览：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/emoPointer/dotfile/main/terminator/install.sh | bash -s -- --dry-run
 ```
 
 脚本默认把配置导入到 `~/.config/terminator/config`。如果目标文件已存在，
@@ -22,16 +31,24 @@ cd dotfile/terminator
 如果使用了自定义 `XDG_CONFIG_HOME`，可这样导入：
 
 ```bash
-XDG_CONFIG_HOME=/path/to/config-home ./install.sh
+curl -fsSL https://raw.githubusercontent.com/emoPointer/dotfile/main/terminator/install.sh | XDG_CONFIG_HOME=/path/to/config-home bash
 ```
 
-## 卸载配置
+管道执行远程脚本前，应先在浏览器中检查脚本内容。也可以克隆仓库后在本目录执行
+`./install.sh`；本地和远程模式的安装行为相同。
 
-在仓库的 `terminator` 目录执行：
+## 一条指令卸载
+
+先预览卸载操作：
 
 ```bash
-./uninstall.sh --dry-run
-./uninstall.sh
+curl -fsSL https://raw.githubusercontent.com/emoPointer/dotfile/main/terminator/uninstall.sh | bash -s -- --dry-run
+```
+
+确认后卸载：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/emoPointer/dotfile/main/terminator/uninstall.sh | bash
 ```
 
 卸载脚本会恢复首次导入前的配置；如果导入前没有配置文件，则删除本仓库安装的
@@ -40,7 +57,7 @@ XDG_CONFIG_HOME=/path/to/config-home ./install.sh
 使用了自定义 `XDG_CONFIG_HOME` 时，卸载必须传入同一个值：
 
 ```bash
-XDG_CONFIG_HOME=/path/to/config-home ./uninstall.sh
+curl -fsSL https://raw.githubusercontent.com/emoPointer/dotfile/main/terminator/uninstall.sh | XDG_CONFIG_HOME=/path/to/config-home bash
 ```
 
 该操作只卸载本仓库导入的配置，不会卸载 Terminator 软件。

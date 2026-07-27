@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
 # Purpose: install the tracked Codex guidance and personal defaults into CODEX_HOME.
-# Inputs: AGENTS.md and config.toml beside this script.
+# Inputs: local AGENTS.md and config.toml, or copies downloaded from the public repository.
 # Outputs: CODEX_HOME/AGENTS.md and an updated CODEX_HOME/config.toml.
-# Prerequisites: Bash and standard Unix tools.
+# Prerequisites: Bash, standard Unix tools, and curl or wget for remote installation.
 # Usage: ./install.sh [--dry-run]
-# Parameters: CODEX_HOME changes the target.
+# Parameters: CODEX_HOME changes the target; DOTFILES_REF changes the remote Git ref.
 # File effects: creates or updates files, writes rollback state, and creates safety backups.
 
 set -euo pipefail
 
-readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+fi
+readonly SCRIPT_DIR
 readonly TARGET_DIR="${CODEX_HOME:-${HOME}/.codex}"
 readonly STATE_DIR="${TARGET_DIR}/.dotfiles-codex-state"
 readonly TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+readonly DOTFILES_REPOSITORY="${DOTFILES_REPOSITORY:-emoPointer/dotfile}"
+readonly DOTFILES_REF="${DOTFILES_REF:-main}"
+readonly DOTFILES_RAW_BASE="${DOTFILES_RAW_BASE:-https://raw.githubusercontent.com/${DOTFILES_REPOSITORY}/${DOTFILES_REF}}"
 readonly MANAGED_KEYS=(
   model
   model_reasoning_effort
@@ -22,7 +29,8 @@ readonly MANAGED_KEYS=(
 
 dry_run=false
 temporary_file=""
-readonly SOURCE_DIRECTORY="${SCRIPT_DIR}"
+download_directory=""
+source_directory="${SCRIPT_DIR}"
 
 usage() {
   cat <<'EOF'
@@ -46,6 +54,9 @@ cleanup() {
   if [[ -n "${temporary_file}" && -f "${temporary_file}" ]]; then
     rm -f -- "${temporary_file}"
   fi
+  if [[ -n "${download_directory}" && -d "${download_directory}" ]]; then
+    rm -rf -- "${download_directory}"
+  fi
 }
 
 trap cleanup EXIT
@@ -68,12 +79,41 @@ if (( $# > 1 )); then
   fail "expected at most one argument"
 fi
 
-for source_file in "${SOURCE_DIRECTORY}/AGENTS.md" "${SOURCE_DIRECTORY}/config.toml"; do
+download_file() {
+  local url="$1"
+  local destination="$2"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --retry 3 --connect-timeout 15 "${url}" -o "${destination}"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q --tries=3 --timeout=15 -O "${destination}" "${url}"
+  else
+    fail "remote installation requires curl or wget"
+  fi
+}
+
+prepare_sources() {
+  if [[ -n "${source_directory}" &&
+        -f "${source_directory}/AGENTS.md" &&
+        -f "${source_directory}/config.toml" ]]; then
+    return
+  fi
+
+  download_directory="$(mktemp -d "${TMPDIR:-/tmp}/dotfile-codex-download.XXXXXX")"
+  source_directory="${download_directory}"
+  download_file "${DOTFILES_RAW_BASE}/codex/AGENTS.md" "${source_directory}/AGENTS.md"
+  download_file "${DOTFILES_RAW_BASE}/codex/config.toml" "${source_directory}/config.toml"
+  printf 'Downloaded Codex configuration from %s (%s).\n' "${DOTFILES_REPOSITORY}" "${DOTFILES_REF}"
+}
+
+prepare_sources
+
+for source_file in "${source_directory}/AGENTS.md" "${source_directory}/config.toml"; do
   [[ -f "${source_file}" ]] || fail "missing source file: ${source_file}"
 done
 
 for key in "${MANAGED_KEYS[@]}"; do
-  match_count="$(grep -Ec "^[[:space:]]*${key}[[:space:]]*=" "${SOURCE_DIRECTORY}/config.toml" || true)"
+  match_count="$(grep -Ec "^[[:space:]]*${key}[[:space:]]*=" "${source_directory}/config.toml" || true)"
   [[ "${match_count}" == "1" ]] || fail "expected exactly one ${key} entry in codex/config.toml"
 done
 
@@ -229,7 +269,7 @@ if [[ "${dry_run}" != true ]]; then
   mkdir -p -- "${TARGET_DIR}"
 fi
 
-install_exact_file "${SOURCE_DIRECTORY}/AGENTS.md" "${TARGET_DIR}/AGENTS.md"
-merge_config "${SOURCE_DIRECTORY}/config.toml" "${TARGET_DIR}/config.toml"
+install_exact_file "${source_directory}/AGENTS.md" "${TARGET_DIR}/AGENTS.md"
+merge_config "${source_directory}/config.toml" "${TARGET_DIR}/config.toml"
 
 printf 'Codex configuration installation complete. Start a new Codex session to use it.\n'
